@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brasil × Dubai Time Nexus</title>
+<style>
+*{box-sizing:border-box}
+body{
+    margin:0;
+    min-height:100vh;
+    font-family:Segoe UI,Arial,sans-serif;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(0,255,255,.15), transparent 30%),
+      radial-gradient(circle at 80% 30%, rgba(128,0,255,.18), transparent 35%),
+      radial-gradient(circle at 50% 80%, rgba(0,150,255,.12), transparent 40%),
+      #070b14;
+    color:#fff;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    overflow:hidden;
+}
+
+.panel{
+    width:min(1100px,95vw);
+    padding:30px;
+    border:1px solid rgba(255,255,255,.15);
+    border-radius:28px;
+    backdrop-filter:blur(18px);
+    background:rgba(255,255,255,.05);
+    box-shadow:0 0 40px rgba(0,255,255,.15);
+}
+
+.topbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:20px;
+    flex-wrap:wrap;
+}
+
+h1{
+    margin:0;
+    font-size:clamp(2rem,4vw,3.5rem);
+    letter-spacing:2px;
+}
+
+.toggle{
+    cursor:pointer;
+    border:none;
+    border-radius:999px;
+    padding:12px 20px;
+    font-weight:bold;
+    background:linear-gradient(90deg,#00d4ff,#7b2cff);
+    color:white;
+}
+
+.grid{
+    margin-top:30px;
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+    gap:25px;
+}
+
+.card{
+    position:relative;
+    padding:25px;
+    border-radius:24px;
+    background:rgba(255,255,255,.04);
+    border:1px solid rgba(0,255,255,.18);
+    overflow:hidden;
+}
+
+.card::before{
+    content:"";
+    position:absolute;
+    inset:-100%;
+    background:linear-gradient(45deg,transparent,rgba(0,255,255,.18),transparent);
+    animation:sweep 8s linear infinite;
+}
+
+@keyframes sweep{
+    from{transform:translateX(-50%) translateY(-50%) rotate(0deg)}
+    to{transform:translateX(50%) translateY(50%) rotate(360deg)}
+}
+
+.city{
+    position:relative;
+    z-index:2;
+    font-size:1.4rem;
+}
+
+.time{
+    position:relative;
+    z-index:2;
+    font-size:clamp(2.8rem,7vw,5rem);
+    font-weight:800;
+    margin:15px 0;
+    text-shadow:0 0 18px rgba(0,255,255,.7);
+}
+
+.date{
+    position:relative;
+    z-index:2;
+    opacity:.85;
+}
+
+.footer{
+    margin-top:25px;
+    text-align:center;
+    font-size:1.1rem;
+    color:#9eefff;
+}
+</style>
+</head>
+<body>
+<div class="panel">
+    <div class="topbar">
+        <h1 id="title">TIME NEXUS • BRASIL × DUBAI</h1>
+        <button class="toggle" onclick="toggleLanguage()" id="btn">
+            English
+        </button>
+    </div>
+
+    <div class="grid">
+        <div class="card">
+            <div class="city" id="cityBr">Brasília</div>
+            <div class="time" id="brTime"></div>
+            <div class="date" id="brDate"></div>
+        </div>
+
+        <div class="card">
+            <div class="city" id="cityDu">Dubai</div>
+            <div class="time" id="duTime"></div>
+            <div class="date" id="duDate"></div>
+        </div>
+    </div>
+
+    <div class="footer" id="diff">
+        Dubai está 7 horas à frente de Brasília.
+    </div>
+</div>
+
+<script>
+let lang="pt";
+
+function updateClock(){
+    const now=new Date();
+
+    const locale=lang==="pt"?"pt-BR":"en-US";
+
+    document.getElementById("brTime").textContent =
+        new Intl.DateTimeFormat(locale,{
+            timeZone:"America/Sao_Paulo",
+            hour:"2-digit",minute:"2-digit",second:"2-digit",
+            hour12:false
+        }).format(now);
+
+    document.getElementById("duTime").textContent =
+        new Intl.DateTimeFormat(locale,{
+            timeZone:"Asia/Dubai",
+            hour:"2-digit",minute:"2-digit",second:"2-digit",
+            hour12:false
+        }).format(now);
+
+    document.getElementById("brDate").textContent =
+        new Intl.DateTimeFormat(locale,{
+            timeZone:"America/Sao_Paulo",
+            dateStyle:"full"
+        }).format(now);
+
+    document.getElementById("duDate").textContent =
+        new Intl.DateTimeFormat(locale,{
+            timeZone:"Asia/Dubai",
+            dateStyle:"full"
+        }).format(now);
+}
+
+function toggleLanguage(){
+    lang = lang==="pt" ? "en" : "pt";
+
+    if(lang==="en"){
+        document.getElementById("title").textContent="TIME NEXUS • BRAZIL × DUBAI";
+        document.getElementById("cityBr").textContent="Brasilia";
+        document.getElementById("cityDu").textContent="Dubai";
+        document.getElementById("diff").textContent="Dubai is 7 hours ahead of Brasilia.";
+        document.getElementById("btn").textContent="Português";
+    }else{
+        document.getElementById("title").textContent="TIME NEXUS • BRASIL × DUBAI";
+        document.getElementById("cityBr").textContent="Brasília";
+        document.getElementById("cityDu").textContent="Dubai";
+        document.getElementById("diff").textContent="Dubai está 7 horas à frente de Brasília.";
+        document.getElementById("btn").textContent="English";
+    }
+    updateClock();
+}
+
+updateClock();
+setInterval(updateClock,1000);
+</script>
+</body>
+</html>
