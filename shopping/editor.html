@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Editor de mapa · Rota no Shopping</title>
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/app.css">
+<style>
+  body.editor { display: grid; grid-template: auto 1fr / 1fr 300px; height: 100vh; overflow: hidden; }
+  .bar { grid-column: 1 / -1; display: flex; align-items: center; gap: 6px; padding: 8px 10px; background: var(--panel); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .bar .sep { width: 1px; align-self: stretch; background: var(--line); margin: 0 4px; }
+  .bar .grow { flex: 1; }
+  .tb { border: 1px solid var(--line); background: var(--panel); border-radius: 10px; padding: 7px 11px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+  .tb[aria-pressed="true"] { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+  .tb kbd { opacity: .55; font: inherit; font-size: 11px; margin-left: 4px; }
+  .tb.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  #map { position: relative; inset: auto; background: #f7f8fa; cursor: default; }
+  #map.tool-pan { cursor: grab; }
+  #map.tool-node, #map.tool-edge, #map.tool-poi, #map.tool-link { cursor: crosshair; }
+  aside { background: var(--panel); border-left: 1px solid var(--line); padding: 14px; overflow-y: auto; font-size: 14px; }
+  aside h3 { margin: 0 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-2); }
+  aside section + section { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+  aside label { display: block; font-size: 12px; color: var(--ink-2); margin: 8px 0 3px; }
+  aside input[type=text], aside input[type=number], aside select, aside input[type=search] { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+  aside .row { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  aside p { margin: 6px 0; color: var(--ink-2); line-height: 1.4; }
+  #status { font-size: 12px; color: var(--ink-2); }
+  #poi-list { list-style: none; padding: 0; margin: 8px 0 0; max-height: 220px; overflow-y: auto; border: 1px solid var(--line); border-radius: 8px; }
+  #poi-list li { padding: 6px 10px; cursor: pointer; display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
+  #poi-list li:hover { background: color-mix(in srgb, var(--ink) 7%, transparent); }
+  #issues { padding-left: 18px; margin: 6px 0; font-size: 13px; }
+  #issues li { cursor: pointer; margin: 3px 0; }
+
+  .e { stroke: #d6336c; stroke-width: 3; vector-effect: non-scaling-stroke; stroke-linecap: round; }
+  .e.door { stroke: #3b82f6; stroke-width: 2; }
+  .e.sel, .n.sel, .p.sel { stroke: #ffb020 !important; stroke-width: 5; }
+  .e-hit { stroke: transparent; stroke-width: 14; vector-effect: non-scaling-stroke; }
+  .n { fill: #fff; stroke: #d6336c; stroke-width: 2; vector-effect: non-scaling-stroke; }
+  .n.door { stroke: #3b82f6; fill: #dbeafe; }
+  .n.tr { fill: #7c3aed; stroke: #fff; }
+  .n.pending { fill: #ffb020; }
+  .p { fill: #0e9f6e; stroke: #fff; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+  .poly { fill: rgba(14, 159, 110, .07); stroke: rgba(14, 159, 110, .55); stroke-width: 1; vector-effect: non-scaling-stroke; pointer-events: none; }
+  .plabel { font-size: 9px; fill: #14233b; text-anchor: middle; pointer-events: none; paint-order: stroke; stroke: #fff; stroke-width: 2.5px; font-weight: 600; }
+  .rubber { stroke: #ffb020; stroke-width: 2; stroke-dasharray: 6 5; vector-effect: non-scaling-stroke; pointer-events: none; }
+  @media (max-width: 800px) { body.editor { grid-template: auto 1fr 40vh / 1fr; } aside { border-left: 0; border-top: 1px solid var(--line); } }
+</style>
+</head>
+<body class="editor">
+<div class="bar">
+  <span id="floor-tabs" style="display:flex;gap:4px"></span>
+  <button class="tb" id="add-floor" title="Novo piso">+ piso</button>
+  <span class="sep"></span>
+  <button class="tb" data-tool="pan">Selecionar<kbd>V</kbd></button>
+  <button class="tb" data-tool="node">Nó<kbd>N</kbd></button>
+  <button class="tb" data-tool="edge">Aresta<kbd>E</kbd></button>
+  <button class="tb" data-tool="poi">Loja<kbd>L</kbd></button>
+  <button class="tb" data-tool="link">Troca de piso<kbd>T</kbd></button>
+  <span class="sep"></span>
+  <button class="tb" id="undo">Desfazer<kbd>Ctrl+Z</kbd></button>
+  <span class="grow"></span>
+  <span id="status"></span>
+  <button class="tb" id="import">Importar JSON</button>
+  <button class="tb" id="test">Testar no app</button>
+  <button class="tb primary" id="export">Exportar JSON</button>
+  <input type="file" id="file-json" accept=".json,application/json" hidden>
+  <input type="file" id="file-img" accept="image/*" hidden>
+</div>
+
+<main id="map"></main>
+
+<aside>
+  <section>
+    <h3>Ferramenta</h3>
+    <p id="hint"></p>
+    <div id="link-type" hidden>
+      <label for="ttype">Tipo de troca de piso</label>
+      <select id="ttype">
+        <option value="escalator">Escada rolante</option>
+        <option value="elevator">Elevador</option>
+        <option value="stairs">Escada</option>
+        <option value="ramp">Esteira / rampa</option>
+      </select>
+    </div>
+  </section>
+
+  <section id="props" hidden>
+    <h3>Selecionado</h3>
+    <div id="props-body"></div>
+  </section>
+
+  <section>
+    <h3>Piso</h3>
+    <label for="fl-name">Nome</label>
+    <input type="text" id="fl-name">
+    <label for="fl-level">Nível (0 = mais baixo)</label>
+    <input type="number" id="fl-level" step="1">
+    <div class="row">
+      <button class="tb" id="fl-img">Trocar imagem da planta</button>
+    </div>
+    <label for="opacity">Opacidade da planta</label>
+    <input type="range" id="opacity" min="0.15" max="1" step="0.05" value="1" style="width:100%">
+    <label><input type="checkbox" id="show-labels" checked> Mostrar nomes das lojas</label>
+  </section>
+
+  <section>
+    <h3>Lojas</h3>
+    <input type="search" id="poi-q" placeholder="Buscar para localizar">
+    <ul id="poi-list"></ul>
+  </section>
+
+  <section>
+    <h3>Verificação</h3>
+    <div class="row"><button class="tb" id="check">Verificar grafo</button></div>
+    <ul id="issues"></ul>
+  </section>
+</aside>
+
+<script type="module" src="js/editor.js"></script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Rota no Shopping · Salvador Norte</title>
+<meta name="description" content="Rotas a pé entre lojas do Salvador Norte Shopping, com troca de piso.">
+<meta name="theme-color" content="#14233b">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body class="app">
+<main id="map" aria-label="Mapa do piso"></main>
+<div id="markers" aria-hidden="true"></div>
+
+<header class="top">
+  <div class="card trip">
+    <div class="rail" aria-hidden="true"><i class="dot from"></i><i class="line"></i><i class="dot to"></i></div>
+    <div class="fields">
+      <button type="button" class="field" id="f-from"><small>Você está em</small><span>Escolha a loja mais próxima</span></button>
+      <button type="button" class="field" id="f-to"><small>Quer ir para</small><span>Escolha o destino</span></button>
+    </div>
+    <button type="button" class="icon-btn" id="swap" aria-label="Inverter origem e destino" title="Inverter">⇅</button>
+  </div>
+  <div class="opts">
+    <label class="chip toggle"><input type="checkbox" id="accessible"><span>♿ Sem escada rolante</span></label>
+    <span class="chip warn" id="draft-flag" hidden>Rascunho do editor</span>
+  </div>
+</header>
+
+<nav id="floors" aria-label="Pisos"></nav>
+<div class="zoom">
+  <button type="button" id="zin" aria-label="Aproximar">+</button>
+  <button type="button" id="zout" aria-label="Afastar">−</button>
+</div>
+
+<section id="sheet" hidden aria-live="polite"></section>
+
+<dialog id="picker">
+  <form method="dialog" class="picker-head">
+    <button class="icon-btn" value="cancel" aria-label="Fechar">←</button>
+    <input type="search" id="q" placeholder="Buscar loja ou serviço" autocomplete="off" enterkeyhint="search">
+  </form>
+  <div class="chips" id="groups"></div>
+  <ul id="results"></ul>
+</dialog>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
